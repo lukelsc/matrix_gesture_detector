@@ -6,7 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 typedef MatrixGestureDetectorCallback = void Function(
-    Matrix4 matrix, Matrix4 translationDeltaMatrix, Matrix4 scaleDeltaMatrix, Matrix4 rotationDeltaMatrix);
+    Matrix4 matrix,
+    Matrix4 translationDeltaMatrix,
+    Matrix4 scaleDeltaMatrix,
+    Matrix4 rotationDeltaMatrix);
 
 /// [MatrixGestureDetector] detects translation, scale and rotation gestures
 /// and combines them into [Matrix4] object that can be used by [Transform] widget
@@ -56,6 +59,13 @@ class MatrixGestureDetector extends StatefulWidget {
   /// aligned relative to the size of this widget.
   final Alignment focalPointAlignment;
 
+  final WidgetController controller;
+
+  final double maxScale;
+  final double minScale;
+
+  final GlobalKey targetKey;
+
   const MatrixGestureDetector({
     Key key,
     @required this.onMatrixUpdate,
@@ -66,12 +76,16 @@ class MatrixGestureDetector extends StatefulWidget {
     this.shouldRotate = true,
     this.clipChild = true,
     this.focalPointAlignment,
+    this.controller,
+    this.targetKey,
+    this.maxScale=5,
+    this.minScale=0.2,
   })  : assert(onMatrixUpdate != null),
         assert(child != null),
         super(key: key);
 
   @override
-  MatrixGestureDetectorState createState() => MatrixGestureDetectorState();
+  _MatrixGestureDetectorState createState() => _MatrixGestureDetectorState();
 
   ///
   /// Compose the matrix from translation, scale and rotation matrices - you can
@@ -102,18 +116,39 @@ class MatrixGestureDetector extends StatefulWidget {
   }
 }
 
-class MatrixGestureDetectorState extends State<MatrixGestureDetector> {
-  Matrix4 translationDeltaMatrix = Matrix4.identity();
-  Matrix4 scaleDeltaMatrix = Matrix4.identity();
-  Matrix4 rotationDeltaMatrix = Matrix4.identity();
-  Matrix4 matrix = Matrix4.identity();
+class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
+  Matrix4 matrix;
+  MatrixDecomposedValues decomposedValues;
+
+  void reset(){
+    matrix = Matrix4.identity();
+    decomposedValues = MatrixGestureDetector.decomposeToValues(matrix);
+    // translationUpdater.value = Alignment.center.alongSize(context.size);
+    // translationUpdater.value = Offset(0,0);
+    rotationUpdater.value = double.nan;
+    scaleUpdater.value = 1.0;
+    widget.onMatrixUpdate(Matrix4.identity(), Matrix4.identity(), Matrix4.identity(), Matrix4.identity());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?.setState(this);
+    reset();
+  }
 
   @override
   Widget build(BuildContext context) {
     Widget child = widget.clipChild ? ClipRect(child: widget.child) : widget.child;
     return GestureDetector(
       onScaleStart: onScaleStart,
-      onScaleUpdate: onScaleUpdate,
+      onScaleUpdate: (detail){
+        onScaleUpdate(
+          focalPoint: detail.focalPoint,
+          scale: detail.scale,
+          rotation: detail.rotation,
+        );
+      },
       onScaleEnd: onScaleEnd,
       child: child,
     );
@@ -141,45 +176,57 @@ class MatrixGestureDetectorState extends State<MatrixGestureDetector> {
     }
   }
 
-  void onScaleUpdate(ScaleUpdateDetails details) {
-    translationDeltaMatrix = Matrix4.identity();
-    scaleDeltaMatrix = Matrix4.identity();
-    rotationDeltaMatrix = Matrix4.identity();
+  void onScaleUpdate({Offset focalPoint, double scale, double rotation}) {
+    Matrix4 _translationDeltaMatrix = Matrix4.identity();
+    Matrix4 _scaleDeltaMatrix = Matrix4.identity();
+    Matrix4 _rotationDeltaMatrix = Matrix4.identity();
 
     // handle matrix translating
-    if (widget.shouldTranslate) {
-      Offset translationDelta = translationUpdater.update(details.focalPoint);
-      translationDeltaMatrix = _translate(translationDelta);
-      matrix = translationDeltaMatrix * matrix;
+    if (focalPoint != null){
+      if (widget.shouldTranslate) {
+        Offset translationDelta = translationUpdater.update(focalPoint);
+        _translationDeltaMatrix = _translate(translationDelta);
+        matrix = _translationDeltaMatrix * matrix;
+      }
+    } else {
+      final targetContext = widget.targetKey.currentContext ?? context;
+      RenderBox renderBox = targetContext.findRenderObject();
+      focalPoint = renderBox.localToGlobal(Alignment.center.alongSize(targetContext.size));
     }
 
-    Offset focalPoint;
+    Offset focalPointLocal;
     if (widget.focalPointAlignment != null) {
-      focalPoint = widget.focalPointAlignment.alongSize(context.size);
+      focalPointLocal = widget.focalPointAlignment.alongSize(context.size);
     } else {
       RenderBox renderBox = context.findRenderObject();
-      focalPoint = renderBox.globalToLocal(details.focalPoint);
+      focalPointLocal = renderBox.globalToLocal(focalPoint);
     }
 
     // handle matrix scaling
-    if (widget.shouldScale && details.scale != 1.0) {
-      double scaleDelta = scaleUpdater.update(details.scale);
-      scaleDeltaMatrix = _scale(scaleDelta, focalPoint);
-      matrix = scaleDeltaMatrix * matrix;
-    }
-
-    // handle matrix rotating
-    if (widget.shouldRotate && details.rotation != 0.0) {
-      if (rotationUpdater.value.isNaN) {
-        rotationUpdater.value = details.rotation;
-      } else {
-        double rotationDelta = rotationUpdater.update(details.rotation);
-        rotationDeltaMatrix = _rotate(rotationDelta, focalPoint);
-        matrix = rotationDeltaMatrix * matrix;
+    if (widget.shouldScale && scale != null && scale != 1.0) {
+      double scaleDelta = scaleUpdater.update(scale);
+      _scaleDeltaMatrix = _scale(scaleDelta, focalPointLocal);
+      final matrixScale = _scaleDeltaMatrix * matrix;
+      final scaleUpdate = MatrixGestureDetector.decomposeToValues(matrixScale).scale;
+      if (scaleUpdate <= widget.maxScale && scaleUpdate >= widget.minScale){
+        matrix = matrixScale;
       }
     }
 
-    widget.onMatrixUpdate(matrix, translationDeltaMatrix, scaleDeltaMatrix, rotationDeltaMatrix);
+    // handle matrix rotating
+    if (widget.shouldRotate && rotation != null && rotation != 0.0) {
+      if (rotationUpdater.value.isNaN) {
+        rotationUpdater.value = rotation;
+      } else {
+        double rotationDelta = rotationUpdater.update(rotation);
+        _rotationDeltaMatrix = _rotate(rotationDelta, focalPointLocal);
+        matrix = _rotationDeltaMatrix * matrix;
+      }
+    }
+
+    decomposedValues = MatrixGestureDetector.decomposeToValues(matrix);
+    widget.onMatrixUpdate(
+        matrix, _translationDeltaMatrix, _scaleDeltaMatrix, _rotationDeltaMatrix);
   }
 
   Matrix4 _translate(Offset translation) {
@@ -257,5 +304,29 @@ class MatrixDecomposedValues {
   @override
   String toString() {
     return 'MatrixDecomposedValues(translation: $translation, scale: ${scale.toStringAsFixed(3)}, rotation: ${rotation.toStringAsFixed(3)})';
+  }
+}
+
+class WidgetController {
+  _MatrixGestureDetectorState _state;
+
+  WidgetController();
+
+  void setState(_MatrixGestureDetectorState s) => _state = s;
+
+  double get scale => _state.decomposedValues.scale;
+  set scale(double val){
+    _state.onScaleUpdate(scale: val);
+  }
+
+  double get rotation {
+    return _state.decomposedValues.rotation;
+  }
+  set rotation(double val){
+    _state.onScaleUpdate(rotation: val);
+  }
+
+  void reset(){
+    _state.reset();
   }
 }
