@@ -61,13 +61,13 @@ class MatrixGestureDetector extends StatefulWidget {
   final double maxScale;
   final double minScale;
 
-  final double childWidth;
-  final double childHeight;
-  final double childPadding;
+  double childWidth;
+  double childHeight;
+  double childPadding;
 
   final GlobalKey targetKey;
 
-  const MatrixGestureDetector({
+  MatrixGestureDetector({
     Key key,
     @required this.onMatrixUpdate,
     this.onMatrixEnd,
