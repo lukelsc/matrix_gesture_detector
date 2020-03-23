@@ -205,6 +205,9 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
           matrix[12] = 0.0;
         }
 
+        print(matrix[13]);
+        print(_imageScaledHeight);
+        print(_imageHeight);
         if(matrix[13] < 0){
           if (_imageScaledHeight < -matrix[13] + _imageHeight) {
             matrix[13] = -_imageScaledHeight + _imageHeight;
@@ -212,6 +215,7 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
         } else {
           matrix[13] = 0.0;
         }
+        print(matrix[13]);
       }
     } else {
       final targetContext = widget.targetKey.currentContext ?? context;
