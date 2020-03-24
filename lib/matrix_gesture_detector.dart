@@ -343,8 +343,9 @@ class WidgetController {
   void setState(_MatrixGestureDetectorState s) => _state = s;
 
   double get scale => _state.decomposedValues.scale;
-  set scale(double val) {
-    _state.onScaleUpdate(scale: val);
+
+  set scale(val) {
+    _state.onScaleUpdate(focalPoint: val['focalPoint'], scale: val['scale']);
   }
 
   double get rotation {
