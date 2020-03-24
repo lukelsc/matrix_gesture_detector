@@ -188,6 +188,11 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
     // handle matrix translating
     if (focalPoint != null) {
       if (widget.shouldTranslate) {
+        if (translationUpdater.value == null) {
+          translationUpdater.value = Offset(0,0);
+          rotationUpdater.value = double.nan;
+          scaleUpdater.value = 1.0;
+        }
         Offset translationDelta = translationUpdater.update(focalPoint);
         _translationDeltaMatrix = _translate(translationDelta);
         matrix = _translationDeltaMatrix * matrix;
