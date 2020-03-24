@@ -218,9 +218,9 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
         print(matrix[13]);
       }
     } else {
-      // final targetContext = widget.targetKey.currentContext ?? context;
-      // RenderBox renderBox = targetContext.findRenderObject();
-      // focalPoint = renderBox.localToGlobal(Alignment.center.alongSize(targetContext.size));
+      final targetContext = widget.targetKey.currentContext ?? context;
+      RenderBox renderBox = targetContext.findRenderObject();
+      focalPoint = renderBox.localToGlobal(Alignment.center.alongSize(targetContext.size));
     }
 
     Offset focalPointLocal;
