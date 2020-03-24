@@ -192,6 +192,7 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
           translationUpdater.value = Offset(0,0);
           rotationUpdater.value = double.nan;
           scaleUpdater.value = 1.0;
+          useScale = true;
         }
         Offset translationDelta = translationUpdater.update(focalPoint);
         _translationDeltaMatrix = _translate(translationDelta);
@@ -202,7 +203,12 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
         double _imageHeight = widget.childHeight;
         double _imageScaledHeight = _imageHeight * matrix[5];
 
-        if(matrix[12] < 0){
+        if(useScale){
+          _imageScaledWidth = _imageWidth * scale;
+          _imageScaledHeight = _imageHeight * scale;
+        }
+
+        if (matrix[12] < 0) {
           if (_imageScaledWidth < -matrix[12] + _imageWidth) {
             matrix[12] = -_imageScaledWidth + _imageWidth;
           } 
