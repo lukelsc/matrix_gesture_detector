@@ -67,6 +67,8 @@ class MatrixGestureDetector extends StatefulWidget {
 
   final GlobalKey targetKey;
 
+  final bool disableGesture;
+
   MatrixGestureDetector({
     Key key,
     @required this.onMatrixUpdate,
@@ -84,6 +86,7 @@ class MatrixGestureDetector extends StatefulWidget {
     this.childWidth,
     this.childHeight,
     this.childPadding,
+    this.disableGesture = false,
   })  : assert(onMatrixUpdate != null),
         assert(child != null),
         super(key: key);
@@ -144,18 +147,22 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
   @override
   Widget build(BuildContext context) {
     Widget child = widget.clipChild ? ClipRect(child: widget.child) : widget.child;
-    return GestureDetector(
-      onScaleStart: onScaleStart,
-      onScaleUpdate: (detail) {
-        onScaleUpdate(
-          focalPoint: detail.focalPoint,
-          scale: detail.scale,
-          rotation: detail.rotation,
-        );
-      },
-      onScaleEnd: onScaleEnd,
-      child: child,
-    );
+    if(widget.disableGesture){
+      return child;
+    } else {
+      return GestureDetector(
+        onScaleStart: onScaleStart,
+        onScaleUpdate: (detail) {
+          onScaleUpdate(
+            focalPoint: detail.focalPoint,
+            scale: detail.scale,
+            rotation: detail.rotation,
+          );
+        },
+        onScaleEnd: onScaleEnd,
+        child: child,
+      );
+    }
   }
 
   _ValueUpdater<Offset> translationUpdater = _ValueUpdater(
