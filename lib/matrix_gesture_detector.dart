@@ -68,6 +68,7 @@ class MatrixGestureDetector extends StatefulWidget {
   final GlobalKey targetKey;
 
   final bool disableGesture;
+  final bool disableRotation;
 
   MatrixGestureDetector({
     Key key,
@@ -87,6 +88,7 @@ class MatrixGestureDetector extends StatefulWidget {
     this.childHeight,
     this.childPadding,
     this.disableGesture = false,
+    this.disableRotation = false,
   })  : assert(onMatrixUpdate != null),
         assert(child != null),
         super(key: key);
@@ -156,7 +158,7 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
           onScaleUpdate(
             focalPoint: detail.focalPoint,
             scale: detail.scale,
-            rotation: detail.rotation,
+            rotation: widget.disableRotation ? null : detail.rotation,
           );
         },
         onScaleEnd: onScaleEnd,
