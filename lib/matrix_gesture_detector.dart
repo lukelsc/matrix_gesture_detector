@@ -375,6 +375,7 @@ class WidgetController {
   }
 
   set rotation(double val) {
+    _state.rotationUpdater.value = 0.0;
     _state.onScaleUpdate(rotation: val);
   }
 
