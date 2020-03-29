@@ -149,7 +149,7 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
   @override
   Widget build(BuildContext context) {
     Widget child = widget.clipChild ? ClipRect(child: widget.child) : widget.child;
-    if(widget.disableGesture){
+    if (widget.disableGesture) {
       return child;
     } else {
       return GestureDetector(
@@ -193,50 +193,39 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
     Matrix4 _translationDeltaMatrix = Matrix4.identity();
     Matrix4 _scaleDeltaMatrix = Matrix4.identity();
     Matrix4 _rotationDeltaMatrix = Matrix4.identity();
-    bool _useScale = false;
 
     // handle matrix translating
     if (focalPoint != null) {
       if (widget.shouldTranslate) {
         if (translationUpdater.value == null) {
-          translationUpdater.value = Offset(0,0);
-          rotationUpdater.value = double.nan;
-          scaleUpdater.value = 1.0;
-          _useScale = true;
+          translationUpdater.value = Offset(0, 0);
         }
         Offset translationDelta = translationUpdater.update(focalPoint);
         _translationDeltaMatrix = _translate(translationDelta);
         matrix = _translationDeltaMatrix * matrix;
 
-        double _imageWidth = widget.childWidth;
-        double _imageScaledWidth = _imageWidth * matrix[0];
-        double _imageHeight = widget.childHeight;
-        double _imageScaledHeight = _imageHeight * matrix[5];
+        if (scale != null && scale != 1.0) {
+          double _imageWidth = widget.childWidth;
+          double _imageScaledWidth = _imageWidth * matrix[0];
+          double _imageHeight = widget.childHeight;
+          double _imageScaledHeight = _imageHeight * matrix[5];
 
-        if(_useScale){
-          _imageScaledWidth = _imageWidth * scale;
-          _imageScaledHeight = _imageHeight * scale;
-        }
-
-        if (matrix[12] < 0) {
-          if (_imageScaledWidth < -matrix[12] + _imageWidth) {
-            matrix[12] = -_imageScaledWidth + _imageWidth;
+          if (matrix[12] < 0) {
+            if (_imageScaledWidth < -matrix[12] + _imageWidth) {
+              matrix[12] = -_imageScaledWidth + _imageWidth;
+            }
+          } else {
+            matrix[12] = 0.0;
           }
-        } else {
-          matrix[12] = 0.0;
-        }
 
-        print(matrix[13]);
-        print(_imageScaledHeight);
-        print(_imageHeight);
-        if(matrix[13] < 0){
-          if (_imageScaledHeight < -matrix[13] + _imageHeight) {
-            matrix[13] = -_imageScaledHeight + _imageHeight;
-          } 
-        } else {
-          matrix[13] = 0.0;
+          if (matrix[13] < 0) {
+            if (_imageScaledHeight < -matrix[13] + _imageHeight) {
+              matrix[13] = -_imageScaledHeight + _imageHeight;
+            }
+          } else {
+            matrix[13] = 0.0;
+          }
         }
-        print(matrix[13]);
       }
     } else {
       final targetContext = widget.targetKey.currentContext ?? context;
@@ -371,7 +360,8 @@ class WidgetController {
 
   Offset get translation => _state.decomposedValues.translation;
 
-  set translation(Offset val){
+  set translation(Offset val) {
+    print(val);
     _state.onScaleUpdate(focalPoint: val);
   }
 

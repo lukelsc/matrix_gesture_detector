@@ -6,12 +6,13 @@ class TransformDemo4 extends StatefulWidget {
   State<StatefulWidget> createState() => TransformDemo4State();
 }
 
-class TransformDemo4State extends State<TransformDemo4>
-    with TickerProviderStateMixin {
+class TransformDemo4State extends State<TransformDemo4> with TickerProviderStateMixin {
   ValueNotifier<Matrix4> notifier = ValueNotifier(Matrix4.identity());
   bool shouldScale = true;
   bool shouldRotate = true;
   AnimationController controller;
+  WidgetController _controller;
+  GlobalKey _targetKey = GlobalKey();
 
   Alignment focalPoint = Alignment.center;
 
@@ -29,20 +30,20 @@ class TransformDemo4State extends State<TransformDemo4>
   ]
       .map(
         (alignment) => DropdownMenuItem<Alignment>(
-              value: alignment,
-              child: Text(
-                alignment.toString(),
-              ),
-            ),
+          value: alignment,
+          child: Text(
+            alignment.toString(),
+          ),
+        ),
       )
       .toList();
 
   @override
   void initState() {
     super.initState();
-    controller =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 500));
+    controller = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
     focalPointAnimation = makeFocalPointAnimation(focalPoint, focalPoint);
+    _controller = WidgetController();
   }
 
   @override
@@ -60,14 +61,10 @@ class TransformDemo4State extends State<TransformDemo4>
 
   Body getBody() {
     String lbl = 'use your fingers to ';
-    if (shouldRotate && shouldScale)
-      return Body(lbl + 'rotate / scale', Icons.crop_rotate, Color(0x6600aa00));
-    if (shouldRotate)
-      return Body(lbl + 'rotate', Icons.crop_rotate, Color(0x6600aa00));
-    if (shouldScale)
-      return Body(lbl + 'scale', Icons.transform, Color(0x660000aa));
-    return Body('you have to select at least one checkbox above', Icons.warning,
-        Color(0x66aa0000));
+    if (shouldRotate && shouldScale) return Body(lbl + 'rotate / scale', Icons.crop_rotate, Color(0x6600aa00));
+    if (shouldRotate) return Body(lbl + 'rotate', Icons.crop_rotate, Color(0x6600aa00));
+    if (shouldScale) return Body(lbl + 'scale', Icons.transform, Color(0x660000aa));
+    return Body('you have to select at least one checkbox above', Icons.warning, Color(0x66aa0000));
   }
 
   Animation<Alignment> makeFocalPointAnimation(Alignment begin, Alignment end) {
@@ -80,8 +77,7 @@ class TransformDemo4State extends State<TransformDemo4>
           trailing: DropdownButton(
             onChanged: (value) {
               setState(() {
-                focalPointAnimation =
-                    makeFocalPointAnimation(focalPointAnimation.value, value);
+                focalPointAnimation = makeFocalPointAnimation(focalPointAnimation.value, value);
                 focalPoint = value;
                 controller.forward(from: 0.0);
               });
@@ -109,30 +105,47 @@ class TransformDemo4State extends State<TransformDemo4>
           title: Text('rotate'),
         ),
       ];
-
+  double _renderBoxWidth = 300;
+  double _renderBoxHeight = 400;
   List<Widget> makeMainWidget(Body body) => [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: MatrixGestureDetector(
-              onMatrixUpdate: (m, tm, sm, rm) {
-                notifier.value = m;
-              },
-              shouldTranslate: false,
-              shouldScale: shouldScale,
-              shouldRotate: shouldRotate,
-              focalPointAlignment: focalPoint,
-              clipChild: false,
-              child: CustomPaint(
-                foregroundPainter: FocalPointPainter(focalPointAnimation),
-                child: AnimatedBuilder(
-                  animation: notifier,
-                  builder: (ctx, child) => makeTransform(ctx, child, body),
+        GestureDetector(
+          onTapUp: (tapUpDetails) {
+            Matrix4 scaleValue = notifier.value;
+            scaleValue[0] = 2.0;
+            scaleValue[5] = 2.0;
+            scaleValue[12] = -tapUpDetails.localPosition.dx * 2.0 + _renderBoxWidth / 2;
+            scaleValue[13] = -tapUpDetails.localPosition.dy * 2.0 + _renderBoxHeight / 2;
+            notifier.value = scaleValue;
+            //_controller.scale = 2.0;
+            //_controller.translation = Offset()
+          },
+          child: Container(
+            width: _renderBoxWidth,
+            height: _renderBoxHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: MatrixGestureDetector(
+                onMatrixUpdate: (m, tm, sm, rm) {
+                  notifier.value = m;
+                },
+                shouldTranslate: true,
+                shouldScale: shouldScale,
+                shouldRotate: shouldRotate,
+                // focalPointAlignment: focalPoint,
+                targetKey: _targetKey,
+                controller: _controller,
+                clipChild: false,
+                child: CustomPaint(
+                  foregroundPainter: FocalPointPainter(focalPointAnimation),
+                  child: AnimatedBuilder(
+                    animation: notifier,
+                    builder: (ctx, child) => makeTransform(ctx, child, body),
+                  ),
                 ),
               ),
             ),
           ),
-        )
+        ),
       ];
 
   Widget makeTransform(BuildContext context, Widget child, Body body) {
@@ -148,10 +161,10 @@ class TransformDemo4State extends State<TransformDemo4>
           child: AnimatedSwitcher(
             duration: Duration(milliseconds: 400),
             transitionBuilder: (child, animation) => ScaleTransition(
-                  scale: animation,
-                  child: child,
-                  alignment: focalPoint,
-                ),
+              scale: animation,
+              child: child,
+              alignment: focalPoint,
+            ),
             switchInCurve: Curves.ease,
             switchOutCurve: Curves.ease,
             child: Stack(
@@ -194,8 +207,7 @@ class FocalPointPainter extends CustomPainter {
   Path cross;
   Paint foregroundPaint;
 
-  FocalPointPainter(this.focalPointAnimation)
-      : super(repaint: focalPointAnimation) {
+  FocalPointPainter(this.focalPointAnimation) : super(repaint: focalPointAnimation) {
     foregroundPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
