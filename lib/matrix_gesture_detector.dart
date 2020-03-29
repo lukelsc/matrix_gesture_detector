@@ -368,9 +368,12 @@ class WidgetController {
   set scale(double val) {
     _state.onScaleUpdate(scale: val);
   }
-  // set scale(val) {
-  //   _state.onScaleUpdate(focalPoint: val['focalPoint'], scale: val['scale']);
-  // }  
+
+  Offset get translation => _state.decomposedValues.translation;
+
+  set translation(Offset val){
+    _state.onScaleUpdate(focalPoint: val);
+  }
 
   double get rotation {
     return _state.decomposedValues.rotation;
