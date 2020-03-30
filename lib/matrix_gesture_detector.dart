@@ -204,27 +204,25 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
         _translationDeltaMatrix = _translate(translationDelta);
         matrix = _translationDeltaMatrix * matrix;
 
-        if (scale != null && scale != 1.0) {
-          double _imageWidth = widget.childWidth;
-          double _imageScaledWidth = _imageWidth * matrix[0];
-          double _imageHeight = widget.childHeight;
-          double _imageScaledHeight = _imageHeight * matrix[5];
+        double _imageWidth = widget.childWidth;
+        double _imageScaledWidth = _imageWidth * matrix[0];
+        double _imageHeight = widget.childHeight;
+        double _imageScaledHeight = _imageHeight * matrix[5];
 
-          if (matrix[12] < 0) {
-            if (_imageScaledWidth < -matrix[12] + _imageWidth) {
-              matrix[12] = -_imageScaledWidth + _imageWidth;
-            }
-          } else {
-            matrix[12] = 0.0;
+        if (matrix[12] < 0) {
+          if (_imageScaledWidth < -matrix[12] + _imageWidth) {
+            matrix[12] = -_imageScaledWidth + _imageWidth;
           }
+        } else {
+          matrix[12] = 0.0;
+        }
 
-          if (matrix[13] < 0) {
-            if (_imageScaledHeight < -matrix[13] + _imageHeight) {
-              matrix[13] = -_imageScaledHeight + _imageHeight;
-            }
-          } else {
-            matrix[13] = 0.0;
+        if (matrix[13] < 0) {
+          if (_imageScaledHeight < -matrix[13] + _imageHeight) {
+            matrix[13] = -_imageScaledHeight + _imageHeight;
           }
+        } else {
+          matrix[13] = 0.0;
         }
       }
     } else {
