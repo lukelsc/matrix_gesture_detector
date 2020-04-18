@@ -263,25 +263,25 @@ class _MatrixGestureDetectorState extends State<MatrixGestureDetector> {
         _rotationDeltaMatrix = _rotate(rotationDelta, focalPointLocal);
         matrix = _rotationDeltaMatrix * matrix;
       }
-    } else {
-      if (widget.rotationIndex != 0) {
-        switch (widget.rotationIndex) {
-          case 1:
-            rotation = pi * 0.5 * 3;
-            break;
-          case 2:
-            rotation = pi * 0.5 * 2;
-            break;
-          case 3:
-            rotation = pi * 0.5;
-            break;
-        }
-
-        rotationUpdater.value = 0.0;
-
-        double rotationDelta = rotationUpdater.update(rotation);
-        _matrixWithoutRotate = _rotate(rotationDelta, focalPointLocal) * matrix;
+    }
+    
+    if (widget.rotationIndex != 0) {
+      switch (widget.rotationIndex) {
+        case 1:
+          rotation = pi * 0.5 * 3;
+          break;
+        case 2:
+          rotation = pi * 0.5 * 2;
+          break;
+        case 3:
+          rotation = pi * 0.5;
+          break;
       }
+
+      rotationUpdater.value = 0.0;
+
+      double rotationDelta = rotationUpdater.update(rotation);
+      _matrixWithoutRotate = _rotate(rotationDelta, focalPointLocal) * matrix;
     }
 
     decomposedValues = MatrixGestureDetector.decomposeToValues(matrix);
